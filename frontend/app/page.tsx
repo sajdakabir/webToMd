@@ -66,7 +66,7 @@ export default function Home() {
             <h1 className="text-xl  text-black mb-2 tracking-tight">
               Web to Markdown 
             </h1>
-            <p className="text-xl text-gray-500 font-light">
+            <p className="text-md text-gray-500 font-light">
               Convert any website into clean, LLM-ready markdown
             </p>
           </div>
