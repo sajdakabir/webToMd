@@ -34,6 +34,10 @@ class WebScraper:
             return cached
         
         # Scrape the page
+        browser = None
+        context = None
+        page = None
+        
         try:
             with sync_playwright() as p:
                 browser = p.chromium.launch(
@@ -53,6 +57,9 @@ class WebScraper:
                 # Get HTML content
                 html = page.content()
                 
+                # Properly close everything
+                page.close()
+                context.close()
                 browser.close()
             
             # Extract and convert to markdown
@@ -76,6 +83,17 @@ class WebScraper:
                 'status': 'error',
                 'error': str(e)
             }
+        finally:
+            # Ensure cleanup even if error occurs
+            try:
+                if page:
+                    page.close()
+                if context:
+                    context.close()
+                if browser:
+                    browser.close()
+            except:
+                pass
     
     def scrape_website(self, base_url: str, options: dict = None) -> dict:
         """

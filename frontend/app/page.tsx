@@ -59,14 +59,14 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto">
+      <div className="container mx-auto px-6 py-20">
+        <div className="max-w-3xl mx-auto">
           {/* Header */}
-          <div className="mb-12">
-            <h1 className="text-5xl font-bold text-black mb-3">
+          <div className="mb-16">
+            <h1 className="text-6xl font-bold text-black mb-4 tracking-tight">
               Web to Markdown ⚡
             </h1>
-            <p className="text-lg text-gray-500">
+            <p className="text-xl text-gray-500 font-light">
               Convert any website into clean, LLM-ready markdown
             </p>
           </div>
