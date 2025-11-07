@@ -43,7 +43,7 @@ export default function UrlInput({ onScrape, loading }: UrlInputProps) {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://example.com"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent"
             required
             disabled={loading}
           />
@@ -62,7 +62,7 @@ export default function UrlInput({ onScrape, loading }: UrlInputProps) {
               onChange={(e) => setMaxPages(parseInt(e.target.value))}
               min="1"
               max="500"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500"
               disabled={loading}
             />
           </div>
@@ -73,7 +73,7 @@ export default function UrlInput({ onScrape, loading }: UrlInputProps) {
                 type="checkbox"
                 checked={crawlSubpages}
                 onChange={(e) => setCrawlSubpages(e.target.checked)}
-                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-gray-600 rounded focus:ring-gray-500"
                 disabled={loading}
               />
               <span className="text-sm text-gray-700">Crawl subpages</span>
@@ -84,7 +84,7 @@ export default function UrlInput({ onScrape, loading }: UrlInputProps) {
                 type="checkbox"
                 checked={followSitemap}
                 onChange={(e) => setFollowSitemap(e.target.checked)}
-                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-gray-600 rounded focus:ring-gray-500"
                 disabled={loading}
               />
               <span className="text-sm text-gray-700">Follow sitemap</span>
@@ -95,7 +95,7 @@ export default function UrlInput({ onScrape, loading }: UrlInputProps) {
                 type="checkbox"
                 checked={detailedResponse}
                 onChange={(e) => setDetailedResponse(e.target.checked)}
-                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-gray-600 rounded focus:ring-gray-500"
                 disabled={loading}
               />
               <span className="text-sm text-gray-700">Detailed response</span>
@@ -107,7 +107,7 @@ export default function UrlInput({ onScrape, loading }: UrlInputProps) {
         <button
           type="submit"
           disabled={loading || !url}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center space-x-2"
+          className="w-full bg-gray-900 hover:bg-black disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center space-x-2"
         >
           {loading ? (
             <>

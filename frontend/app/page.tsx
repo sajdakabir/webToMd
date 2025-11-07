@@ -84,7 +84,7 @@ export default function Home() {
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder="https://example.com"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent"
                   required
                   disabled={loading}
                 />
@@ -93,7 +93,7 @@ export default function Home() {
               <button
                 type="submit"
                 disabled={loading || !url}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                className="w-full bg-gray-900 hover:bg-black disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center space-x-2"
               >
                 {loading ? (
                   <>
@@ -121,7 +121,7 @@ export default function Home() {
               <div className="flex justify-end">
                 <button
                   onClick={handleDownload}
-                  className="flex items-center space-x-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
+                  className="flex items-center space-x-2 px-6 py-3 bg-gray-700 hover:bg-gray-800 text-white font-semibold rounded-lg transition-colors"
                 >
                   <Download className="w-5 h-5" />
                   <span>Download Markdown</span>
