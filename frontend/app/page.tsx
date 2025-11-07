@@ -58,52 +58,62 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="container mx-auto px-4 py-12">
+    <main className="min-h-screen bg-white">
+      <div className="container mx-auto px-4 py-16">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-5xl font-bold text-gray-900 mb-4">
+          <div className="mb-12">
+            <h1 className="text-5xl font-bold text-black mb-3">
               Web to Markdown ⚡
             </h1>
-            <p className="text-xl text-gray-600">
+            <p className="text-lg text-gray-500">
               Convert any website into clean, LLM-ready markdown
             </p>
           </div>
 
           {/* Input Form */}
-          <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
-            <form onSubmit={handleScrape} className="space-y-4">
-              <div>
-                <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-2">
-                  Website URL
-                </label>
+          <div className="bg-gray-50 rounded-2xl p-8 mb-6">
+            <form onSubmit={handleScrape}>
+              <div className="flex items-center gap-4">
+                {/* Icon */}
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
+                    <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Input */}
                 <input
                   type="url"
-                  id="url"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://example.com"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                  placeholder="Enter website URL..."
+                  className="flex-1 px-4 py-3 bg-transparent border-none focus:outline-none text-gray-900 placeholder-gray-400"
                   required
                   disabled={loading}
                 />
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading || !url}
+                  className="flex-shrink-0 w-12 h-12 bg-gray-700 hover:bg-gray-800 disabled:bg-gray-300 rounded-full flex items-center justify-center transition-colors"
+                >
+                  {loading ? (
+                    <Loader2 className="w-5 h-5 text-white animate-spin" />
+                  ) : (
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                    </svg>
+                  )}
+                </button>
               </div>
 
-              <button
-                type="submit"
-                disabled={loading || !url}
-                className="w-full bg-gray-900 hover:bg-black disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center space-x-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Converting...</span>
-                  </>
-                ) : (
-                  <span>Convert to Markdown</span>
-                )}
-              </button>
+              <p className="text-sm text-gray-400 mt-4 text-center">
+                Press Enter or use the arrow to send
+              </p>
             </form>
           </div>
 
