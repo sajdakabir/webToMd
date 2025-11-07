@@ -62,9 +62,9 @@ export default function Home() {
       <div className="container mx-auto px-6 py-20">
         <div className="max-w-3xl mx-auto">
           {/* Header */}
-          <div className="mb-16">
-            <h1 className="text-6xl font-bold text-black mb-4 tracking-tight">
-              Web to Markdown ⚡
+          <div className="mb-16 text-center">
+            <h1 className="text-xl  text-black mb-2 tracking-tight">
+              Web to Markdown 
             </h1>
             <p className="text-xl text-gray-500 font-light">
               Convert any website into clean, LLM-ready markdown
@@ -111,12 +111,13 @@ export default function Home() {
                 </button>
               </div>
 
+            </form>
+            
+          </div>
+
               <p className="text-sm text-gray-400 mt-4 text-center">
                 Press Enter or use the arrow to send
               </p>
-            </form>
-          </div>
-
           {/* Error Display */}
           {error && (
             <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
