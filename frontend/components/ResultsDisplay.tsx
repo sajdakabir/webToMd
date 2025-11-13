@@ -119,7 +119,7 @@ export default function ResultsDisplay({ results }: ResultsDisplayProps) {
             </a>
           </div>
 
-          <div className="prose max-w-none">
+          <div className="prose prose-slate max-w-none prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:my-4 prose-ul:my-4 prose-li:my-2">
             <ReactMarkdown>{currentResult.markdown}</ReactMarkdown>
           </div>
         </div>

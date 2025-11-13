@@ -1,10 +1,12 @@
-from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout, Error as PlaywrightError
 from app.core.extractor import ContentExtractor
 from app.core.sitemap import SitemapParser
 from app.utils.cache import cache_get, cache_set
 import hashlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse
+import requests
+from bs4 import BeautifulSoup
 
 class WebScraper:
     """Main scraper class combining sitemap parsing and content extraction"""
@@ -33,36 +35,71 @@ class WebScraper:
         if cached:
             return cached
         
-        # Scrape the page
-        browser = None
-        context = None
-        page = None
+        # Try Playwright first, fallback to requests if it fails
+        html = None
+        playwright_error = None
         
         try:
             with sync_playwright() as p:
                 browser = p.chromium.launch(
                     headless=True,
-                    args=['--disable-blink-features=AutomationControlled']
+                    args=[
+                        '--disable-blink-features=AutomationControlled',
+                        '--disable-dev-shm-usage',
+                        '--no-sandbox',
+                        '--disable-setuid-sandbox',
+                        '--disable-web-security'
+                    ]
                 )
                 context = browser.new_context(
                     user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    viewport={'width': 1920, 'height': 1080}
+                    viewport={'width': 1920, 'height': 1080},
+                    ignore_https_errors=True,
+                    java_script_enabled=True
                 )
                 page = context.new_page()
                 
+                # Set longer timeout
+                page.set_default_timeout(30000)
+                
                 # Navigate to URL
-                page.goto(url, wait_until='domcontentloaded', timeout=30000)
-                page.wait_for_timeout(2000)  # Wait 2 seconds for JS to load
+                response = page.goto(url, wait_until='domcontentloaded', timeout=30000)
+                
+                # Check if response is valid
+                if response is None or response.status >= 400:
+                    raise Exception(f"Failed to load page: HTTP {response.status if response else 'No response'}")
+                
+                # Wait for dynamic content to load
+                page.wait_for_timeout(3000)
                 
                 # Get HTML content
                 html = page.content()
-                
-                # Properly close everything
-                page.close()
-                context.close()
-                browser.close()
             
-            # Extract and convert to markdown
+        except (PlaywrightTimeout, PlaywrightError) as e:
+            playwright_error = str(e)
+            # Fallback to requests
+            try:
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                }
+                response = requests.get(url, headers=headers, timeout=30)
+                response.raise_for_status()
+                html = response.text
+            except Exception as req_error:
+                return {
+                    'url': url,
+                    'status': 'error',
+                    'error': f'Playwright failed: {playwright_error}, Requests failed: {str(req_error)}'
+                }
+        except Exception as e:
+            return {
+                'url': url,
+                'status': 'error',
+                'error': str(e)
+            }
+        
+        # Extract and convert to markdown
+        try:
             result = self.extractor.extract_content(html, url, detailed)
             result['status'] = 'success'
             
@@ -70,30 +107,12 @@ class WebScraper:
             cache_set(cache_key, result)
             
             return result
-            
-        except PlaywrightTimeout:
-            return {
-                'url': url,
-                'status': 'error',
-                'error': 'Page load timeout'
-            }
         except Exception as e:
             return {
                 'url': url,
                 'status': 'error',
-                'error': str(e)
+                'error': f'Content extraction failed: {str(e)}'
             }
-        finally:
-            # Ensure cleanup even if error occurs
-            try:
-                if page:
-                    page.close()
-                if context:
-                    context.close()
-                if browser:
-                    browser.close()
-            except:
-                pass
     
     def scrape_website(self, base_url: str, options: dict = None) -> dict:
         """
