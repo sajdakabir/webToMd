@@ -46,14 +46,26 @@ export default function Home() {
   };
 
   const handleDownload = () => {
+    // Extract domain from URL for filename
+    let filename = 'content.md';
+    try {
+      const urlObj = new URL(url);
+      let domain = urlObj.hostname.replace('www.', '');
+      // Remove TLD (.com, .ai, .io, etc.)
+      domain = domain.split('.')[0];
+      filename = `${domain}.md`;
+    } catch (e) {
+      console.error('Failed to extract domain:', e);
+    }
+
     const blob = new Blob([markdown], { type: 'text/markdown' });
-    const url = window.URL.createObjectURL(blob);
+    const downloadUrl = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = 'content.md';
+    a.href = downloadUrl;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
-    window.URL.revokeObjectURL(url);
+    window.URL.revokeObjectURL(downloadUrl);
     document.body.removeChild(a);
   };
 
