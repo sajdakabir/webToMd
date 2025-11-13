@@ -1,27 +1,11 @@
-from readability import Document
-import html2text
 from bs4 import BeautifulSoup
+import re
 
 class ContentExtractor:
     """Extract and convert web content to clean markdown"""
     
     def __init__(self):
-        self.html2text = html2text.HTML2Text()
-        self.html2text.ignore_links = False
-        self.html2text.body_width = 0  # Don't wrap lines
-        self.html2text.ignore_images = False
-        self.html2text.ignore_emphasis = False
-        self.html2text.single_line_break = False  # Use double line breaks for paragraphs
-        self.html2text.skip_internal_links = False
-        self.html2text.inline_links = True
-        self.html2text.protect_links = True
-        self.html2text.mark_code = True
-        self.html2text.default_image_alt = ''
-        self.html2text.ignore_tables = False
-        self.html2text.decode_errors = 'ignore'
-        self.html2text.ul_item_mark = '-'
-        self.html2text.bypass_tables = False
-        self.html2text.ignore_mailto_links = True
+        pass
     
     def extract_content(self, html: str, url: str, detailed: bool = False) -> dict:
         """
@@ -45,19 +29,24 @@ class ContentExtractor:
         meta_desc = soup.find('meta', attrs={'name': 'description'})
         description = meta_desc.get('content', '') if meta_desc else ''
         
-        # Remove only scripts and styles - keep everything else
-        for tag in soup(['script', 'style', 'noscript']):
+        # Remove scripts, styles, and other non-content elements
+        for tag in soup(['script', 'style', 'noscript', 'svg', 'path']):
             tag.decompose()
         
         # Get body content
         body = soup.find('body')
-        if body:
-            clean_html = str(body)
-        else:
-            clean_html = str(soup)
+        if not body:
+            body = soup
         
+        # Extract text content with structure
+        markdown = self._html_to_markdown(body)
+        
+        print(f"Final markdown length: {len(markdown)} characters")
         # Convert to markdown
         markdown = self.html2text.handle(clean_html)
+        
+        print(f"Markdown after html2text: {len(markdown)} characters")
+        print(f"First 500 chars of markdown: {markdown[:500]}")
         
         # Clean up markdown
         markdown = self._clean_markdown(markdown)

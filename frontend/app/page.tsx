@@ -10,6 +10,8 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [markdown, setMarkdown] = useState<string>('');
   const [useLLM, setUseLLM] = useState(false);
+  const [maxPages, setMaxPages] = useState(10);
+  const [crawlSubpages, setCrawlSubpages] = useState(true);
 
   const handleScrape = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,8 +29,9 @@ export default function Home() {
           url,
           options: {
             llmFilter: useLLM,
-            crawlSubpages: false,  // Single page only for now
-            followSitemap: false
+            crawlSubpages: crawlSubpages,
+            followSitemap: true,
+            maxPages: maxPages
           }
         }),
       });
@@ -39,11 +42,23 @@ export default function Home() {
 
       const data = await response.json();
       
-      if (data.results && data.results[0]) {
-        if (data.results[0].status === 'success') {
-          setMarkdown(data.results[0].markdown);
+      console.log('API Response:', data);
+      console.log('Total pages:', data.totalPages);
+      console.log('Successful:', data.successful);
+      
+      if (data.results && data.results.length > 0) {
+        // Combine all successful results
+        const successfulResults = data.results.filter((r: any) => r.status === 'success');
+        
+        if (successfulResults.length > 0) {
+          // Combine markdown from all pages
+          const combinedMarkdown = successfulResults.map((r: any) => {
+            return `# ${r.title}\n\n**URL:** ${r.url}\n\n---\n\n${r.markdown}`;
+          }).join('\n\n---\n\n');
+          
+          setMarkdown(combinedMarkdown);
         } else {
-          setError(data.results[0].error || 'Failed to extract content');
+          setError('No content could be extracted from any page');
         }
       }
     } catch (err: any) {
@@ -133,19 +148,52 @@ export default function Home() {
 
             </form>
             
-            {/* LLM Filter Option */}
-            <div className="mt-4 flex items-center justify-center">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={useLLM}
-                  onChange={(e) => setUseLLM(e.target.checked)}
-                  className="w-4 h-4 text-gray-700 border-gray-300 rounded focus:ring-gray-500"
-                />
-                <span className="text-sm text-gray-600">
-                  Use AI to clean content (requires OpenAI API key)
-                </span>
-              </label>
+            {/* Options */}
+            <div className="mt-4 space-y-3">
+              {/* Crawl Subpages */}
+              <div className="flex items-center justify-between">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={crawlSubpages}
+                    onChange={(e) => setCrawlSubpages(e.target.checked)}
+                    className="w-4 h-4 text-gray-700 border-gray-300 rounded focus:ring-gray-500"
+                  />
+                  <span className="text-sm text-gray-600">
+                    Crawl multiple pages from sitemap
+                  </span>
+                </label>
+              </div>
+
+              {/* Max Pages */}
+              {crawlSubpages && (
+                <div className="flex items-center justify-between">
+                  <label className="text-sm text-gray-600">Max pages:</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={maxPages}
+                    onChange={(e) => setMaxPages(parseInt(e.target.value) || 10)}
+                    className="w-20 px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-gray-500"
+                  />
+                </div>
+              )}
+
+              {/* LLM Filter */}
+              <div className="flex items-center justify-between">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={useLLM}
+                    onChange={(e) => setUseLLM(e.target.checked)}
+                    className="w-4 h-4 text-gray-700 border-gray-300 rounded focus:ring-gray-500"
+                  />
+                  <span className="text-sm text-gray-600">
+                    Use AI to clean content (requires OpenAI API key)
+                  </span>
+                </label>
+              </div>
             </div>
           </div>
 

@@ -1,6 +1,7 @@
 from app.core.extractor import ContentExtractor
 from app.core.sitemap import SitemapParser
 from app.core.llm_cleaner import LLMCleaner
+from app.core.zenrows_helper import zenrows_scrape
 from app.utils.cache import cache_get, cache_set
 from app.config import Config
 import hashlib
@@ -39,45 +40,92 @@ class WebScraper:
         if cached:
             return cached
         
-        # Scrape with ZenRows
-        try:
-            params = {
-                'url': url,
-                'apikey': self.zenrows_api_key,
-                'js_render': 'true',
-                'premium_proxy': 'true',
-                'wait': '2000'
-            }
-            response = requests.get('https://api.zenrows.com/v1/', params=params, timeout=60)
-            response.raise_for_status()
-            html = response.text
-        except Exception as e:
-            return {
-                'url': url,
-                'status': 'error',
-                'error': f'ZenRows scraping failed: {str(e)}'
-            }
+        # Try ZenRows first
+        result = None
+        if self.zenrows_api_key:
+            try:
+                print(f"🔍 Scraping {url} with ZenRows...")
+                result = zenrows_scrape(url, self.zenrows_api_key)
+                
+                if result['success']:
+                    print(f"✓ ZenRows: Extracted {len(result['text'])} characters")
+                else:
+                    print(f"⚠ ZenRows failed: {result.get('error', 'Unknown error')}")
+                    result = None
+            except Exception as e:
+                print(f"⚠ ZenRows error: {str(e)}")
+                result = None
         
-        # Extract and convert to markdown
-        try:
-            result = self.extractor.extract_content(html, url, detailed)
-            result['status'] = 'success'
-            
-            # Clean with LLM if enabled
-            use_llm = options.get('llmFilter', False)
-            if use_llm and self.llm_cleaner.enabled:
-                result['markdown'] = self.llm_cleaner.clean_content(result['markdown'], url)
-            
-            # Cache the result
-            cache_set(cache_key, result)
-            
-            return result
-        except Exception as e:
-            return {
-                'url': url,
-                'status': 'error',
-                'error': f'Content extraction failed: {str(e)}'
-            }
+        # Fallback to simple requests if ZenRows failed
+        if not result or not result.get('success'):
+            try:
+                print(f"🔄 Falling back to simple HTTP request...")
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+                }
+                response = requests.get(url, headers=headers, timeout=30)
+                response.raise_for_status()
+                
+                from bs4 import BeautifulSoup
+                soup = BeautifulSoup(response.text, 'lxml')
+                
+                # Extract title
+                title_tag = soup.find('title')
+                title = title_tag.get_text().strip() if title_tag else ''
+                
+                # Remove unwanted elements
+                for tag in soup(['script', 'style', 'noscript']):
+                    tag.decompose()
+                
+                # Get text
+                body = soup.find('body') or soup
+                text = body.get_text(separator='\n\n', strip=True)
+                
+                # Extract links
+                base_domain = urlparse(url).netloc
+                links = []
+                for a in soup.find_all('a', href=True):
+                    from urllib.parse import urljoin
+                    full_url = urljoin(url, a['href'])
+                    if urlparse(full_url).netloc == base_domain:
+                        links.append(full_url)
+                
+                result = {
+                    'title': title,
+                    'text': text,
+                    'links': list(set(links)),
+                    'success': True
+                }
+                print(f"✓ Fallback: Extracted {len(text)} characters")
+                
+            except Exception as e:
+                print(f"✗ Fallback failed: {str(e)}")
+                return {
+                    'url': url,
+                    'status': 'error',
+                    'error': f'All scraping methods failed: {str(e)}'
+                }
+        
+        # Build response
+        response_data = {
+            'title': result['title'],
+            'description': '',
+            'markdown': result['text'],
+            'links': result['links'],
+            'url': url,
+            'status': 'success'
+        }
+        
+        # Clean with LLM if enabled
+        use_llm = options.get('llmFilter', False)
+        if use_llm and self.llm_cleaner.enabled:
+            print("🤖 Cleaning with LLM...")
+            response_data['markdown'] = self.llm_cleaner.clean_content(response_data['markdown'], url)
+        
+        # Cache the result
+        cache_set(cache_key, response_data)
+        
+        return response_data
     
     def scrape_website(self, base_url: str, options: dict = None) -> dict:
         """
