@@ -11,6 +11,7 @@ class ContentExtractor:
         self.html2text.body_width = 0  # Don't wrap lines
         self.html2text.ignore_images = False
         self.html2text.ignore_emphasis = False
+        self.html2text.single_line_break = False  # Use double line breaks for paragraphs
     
     def extract_content(self, html: str, url: str, detailed: bool = False) -> dict:
         """

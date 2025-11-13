@@ -111,7 +111,19 @@ def export():
         if format_type == 'json':
             # Return as JSON file
             import json
-            filename = f"scraped_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            from urllib.parse import urlparse
+            
+            # Use domain name for JSON file
+            json_domain = None
+            if results and results[0].get('status') == 'success':
+                parsed_url = urlparse(results[0].get('url', ''))
+                json_domain = parsed_url.netloc.replace('www.', '')
+            
+            if json_domain:
+                filename = f"{json_domain}.json"
+            else:
+                filename = f"scraped_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            
             filepath = os.path.join('/tmp', filename)
             
             with open(filepath, 'w', encoding='utf-8') as f:
@@ -120,22 +132,50 @@ def export():
             return send_file(filepath, as_attachment=True, download_name=filename)
         
         elif format_type == 'zip':
-            # Create ZIP with individual markdown files
-            filename = f"scraped_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+            # Extract domain name for ZIP filename
+            from urllib.parse import urlparse
+            zip_domain = None
+            if results and results[0].get('status') == 'success':
+                parsed_url = urlparse(results[0].get('url', ''))
+                zip_domain = parsed_url.netloc.replace('www.', '')
+            
+            # Use domain name for ZIP file
+            if zip_domain:
+                filename = f"{zip_domain}.zip"
+            else:
+                filename = f"scraped_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+            
             filepath = os.path.join('/tmp', filename)
             
             with zipfile.ZipFile(filepath, 'w') as zipf:
                 for i, result in enumerate(results):
                     if result.get('status') == 'success':
-                        md_filename = f"page_{i+1}_{result.get('title', 'untitled')[:50]}.md"
+                        # Extract domain name from URL
+                        parsed_url = urlparse(result.get('url', ''))
+                        domain = parsed_url.netloc.replace('www.', '')
+                        
+                        # Use domain as filename, fallback to page number
+                        if domain:
+                            md_filename = f"{domain}.md"
+                        else:
+                            md_filename = f"page_{i+1}.md"
+                        
                         # Sanitize filename
-                        md_filename = "".join(c for c in md_filename if c.isalnum() or c in (' ', '-', '_', '.')).rstrip()
+                        md_filename = "".join(c for c in md_filename if c.isalnum() or c in ('.', '-', '_')).rstrip()
                         zipf.writestr(md_filename, result.get('markdown', ''))
             
             return send_file(filepath, as_attachment=True, download_name=filename)
         
         else:  # markdown (single file)
-            filename = f"scraped_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+            # If only one result, use domain name
+            if len(results) == 1 and results[0].get('status') == 'success':
+                from urllib.parse import urlparse
+                parsed_url = urlparse(results[0].get('url', ''))
+                domain = parsed_url.netloc.replace('www.', '')
+                filename = f"{domain}.md" if domain else f"scraped_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+            else:
+                filename = f"scraped_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+            
             filepath = os.path.join('/tmp', filename)
             
             with open(filepath, 'w', encoding='utf-8') as f:
