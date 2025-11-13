@@ -9,6 +9,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [markdown, setMarkdown] = useState<string>('');
+  const [useLLM, setUseLLM] = useState(false);
 
   const handleScrape = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +23,14 @@ export default function Home() {
       const response = await fetch('http://localhost:5000/api/scrape', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ 
+          url,
+          options: {
+            llmFilter: useLLM,
+            crawlSubpages: false,  // Single page only for now
+            followSitemap: false
+          }
+        }),
       });
 
       if (!response.ok) {
@@ -125,6 +133,20 @@ export default function Home() {
 
             </form>
             
+            {/* LLM Filter Option */}
+            <div className="mt-4 flex items-center justify-center">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useLLM}
+                  onChange={(e) => setUseLLM(e.target.checked)}
+                  className="w-4 h-4 text-gray-700 border-gray-300 rounded focus:ring-gray-500"
+                />
+                <span className="text-sm text-gray-600">
+                  Use AI to clean content (requires OpenAI API key)
+                </span>
+              </label>
+            </div>
           </div>
 
               <p className="text-sm text-gray-400 mt-4 text-center">

@@ -12,6 +12,16 @@ class ContentExtractor:
         self.html2text.ignore_images = False
         self.html2text.ignore_emphasis = False
         self.html2text.single_line_break = False  # Use double line breaks for paragraphs
+        self.html2text.skip_internal_links = False
+        self.html2text.inline_links = True
+        self.html2text.protect_links = True
+        self.html2text.mark_code = True
+        self.html2text.default_image_alt = ''
+        self.html2text.ignore_tables = False
+        self.html2text.decode_errors = 'ignore'
+        self.html2text.ul_item_mark = '-'
+        self.html2text.bypass_tables = False
+        self.html2text.ignore_mailto_links = True
     
     def extract_content(self, html: str, url: str, detailed: bool = False) -> dict:
         """
@@ -35,19 +45,22 @@ class ContentExtractor:
         meta_desc = soup.find('meta', attrs={'name': 'description'})
         description = meta_desc.get('content', '') if meta_desc else ''
         
-        if detailed:
-            # Remove unwanted elements but keep structure
-            for tag in soup(['script', 'style', 'nav', 'footer', 'aside', 'noscript']):
-                tag.decompose()
-            clean_html = str(soup)
+        # Remove only scripts and styles - keep everything else
+        for tag in soup(['script', 'style', 'noscript']):
+            tag.decompose()
+        
+        # Get body content
+        body = soup.find('body')
+        if body:
+            clean_html = str(body)
         else:
-            # Use Readability to extract main content
-            doc = Document(html)
-            title = doc.title() or title
-            clean_html = doc.summary()
+            clean_html = str(soup)
         
         # Convert to markdown
         markdown = self.html2text.handle(clean_html)
+        
+        # Clean up markdown
+        markdown = self._clean_markdown(markdown)
         
         # Extract links
         links = self._extract_links(soup, url)
@@ -59,6 +72,18 @@ class ContentExtractor:
             'links': links,
             'url': url
         }
+    
+    def _clean_markdown(self, markdown: str) -> str:
+        """Clean up markdown formatting"""
+        import re
+        
+        # Remove excessive blank lines (more than 3 consecutive)
+        markdown = re.sub(r'\n{4,}', '\n\n\n', markdown)
+        
+        # Remove leading/trailing whitespace
+        markdown = markdown.strip()
+        
+        return markdown
     
     def _extract_links(self, soup: BeautifulSoup, base_url: str) -> list:
         """Extract all internal links from the page"""
