@@ -1,12 +1,14 @@
-from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout, Error as PlaywrightError
 from app.core.extractor import ContentExtractor
 from app.core.sitemap import SitemapParser
+from app.core.llm_cleaner import LLMCleaner
+from app.core.zenrows_helper import zenrows_scrape
 from app.utils.cache import cache_get, cache_set
+from app.config import Config
 import hashlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import urlparse
 import requests
-from bs4 import BeautifulSoup
+import os
 
 class WebScraper:
     """Main scraper class combining sitemap parsing and content extraction"""
@@ -14,10 +16,13 @@ class WebScraper:
     def __init__(self, max_workers: int = 4):
         self.max_workers = max_workers
         self.extractor = ContentExtractor()
+        self.llm_cleaner = LLMCleaner()
+        self.zenrows_api_key = Config.ZENROWS_API_KEY
+        self.use_zenrows = bool(self.zenrows_api_key)
     
     def scrape_url(self, url: str, options: dict = None) -> dict:
         """
-        Scrape a single URL
+        Scrape a single URL using ZenRows
         
         Args:
             url: URL to scrape
@@ -35,84 +40,92 @@ class WebScraper:
         if cached:
             return cached
         
-        # Try Playwright first, fallback to requests if it fails
-        html = None
-        playwright_error = None
-        
-        try:
-            with sync_playwright() as p:
-                browser = p.chromium.launch(
-                    headless=True,
-                    args=[
-                        '--disable-blink-features=AutomationControlled',
-                        '--disable-dev-shm-usage',
-                        '--no-sandbox',
-                        '--disable-setuid-sandbox',
-                        '--disable-web-security'
-                    ]
-                )
-                context = browser.new_context(
-                    user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    viewport={'width': 1920, 'height': 1080},
-                    ignore_https_errors=True,
-                    java_script_enabled=True
-                )
-                page = context.new_page()
-                
-                # Set longer timeout
-                page.set_default_timeout(30000)
-                
-                # Navigate to URL
-                response = page.goto(url, wait_until='domcontentloaded', timeout=30000)
-                
-                # Check if response is valid
-                if response is None or response.status >= 400:
-                    raise Exception(f"Failed to load page: HTTP {response.status if response else 'No response'}")
-                
-                # Wait for dynamic content to load
-                page.wait_for_timeout(3000)
-                
-                # Get HTML content
-                html = page.content()
-            
-        except (PlaywrightTimeout, PlaywrightError) as e:
-            playwright_error = str(e)
-            # Fallback to requests
+        # Try ZenRows first
+        result = None
+        if self.zenrows_api_key:
             try:
+                print(f"🔍 Scraping {url} with ZenRows...")
+                result = zenrows_scrape(url, self.zenrows_api_key)
+                
+                if result['success']:
+                    print(f"✓ ZenRows: Extracted {len(result['text'])} characters")
+                else:
+                    print(f"⚠ ZenRows failed: {result.get('error', 'Unknown error')}")
+                    result = None
+            except Exception as e:
+                print(f"⚠ ZenRows error: {str(e)}")
+                result = None
+        
+        # Fallback to simple requests if ZenRows failed
+        if not result or not result.get('success'):
+            try:
+                print(f"🔄 Falling back to simple HTTP request...")
                 headers = {
-                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
                 }
                 response = requests.get(url, headers=headers, timeout=30)
                 response.raise_for_status()
-                html = response.text
-            except Exception as req_error:
+                
+                from bs4 import BeautifulSoup
+                soup = BeautifulSoup(response.text, 'lxml')
+                
+                # Extract title
+                title_tag = soup.find('title')
+                title = title_tag.get_text().strip() if title_tag else ''
+                
+                # Remove unwanted elements
+                for tag in soup(['script', 'style', 'noscript']):
+                    tag.decompose()
+                
+                # Get text
+                body = soup.find('body') or soup
+                text = body.get_text(separator='\n\n', strip=True)
+                
+                # Extract links
+                base_domain = urlparse(url).netloc
+                links = []
+                for a in soup.find_all('a', href=True):
+                    from urllib.parse import urljoin
+                    full_url = urljoin(url, a['href'])
+                    if urlparse(full_url).netloc == base_domain:
+                        links.append(full_url)
+                
+                result = {
+                    'title': title,
+                    'text': text,
+                    'links': list(set(links)),
+                    'success': True
+                }
+                print(f"✓ Fallback: Extracted {len(text)} characters")
+                
+            except Exception as e:
+                print(f"✗ Fallback failed: {str(e)}")
                 return {
                     'url': url,
                     'status': 'error',
-                    'error': f'Playwright failed: {playwright_error}, Requests failed: {str(req_error)}'
+                    'error': f'All scraping methods failed: {str(e)}'
                 }
-        except Exception as e:
-            return {
-                'url': url,
-                'status': 'error',
-                'error': str(e)
-            }
         
-        # Extract and convert to markdown
-        try:
-            result = self.extractor.extract_content(html, url, detailed)
-            result['status'] = 'success'
-            
-            # Cache the result
-            cache_set(cache_key, result)
-            
-            return result
-        except Exception as e:
-            return {
-                'url': url,
-                'status': 'error',
-                'error': f'Content extraction failed: {str(e)}'
-            }
+        # Build response
+        response_data = {
+            'title': result['title'],
+            'description': '',
+            'markdown': result['text'],
+            'links': result['links'],
+            'url': url,
+            'status': 'success'
+        }
+        
+        # Clean with LLM if enabled
+        use_llm = options.get('llmFilter', False)
+        if use_llm and self.llm_cleaner.enabled:
+            print("🤖 Cleaning with LLM...")
+            response_data['markdown'] = self.llm_cleaner.clean_content(response_data['markdown'], url)
+        
+        # Cache the result
+        cache_set(cache_key, response_data)
+        
+        return response_data
     
     def scrape_website(self, base_url: str, options: dict = None) -> dict:
         """

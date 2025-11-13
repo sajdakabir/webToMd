@@ -14,8 +14,10 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     
-    # Enable CORS
-    CORS(app, supports_credentials=True)
+    # Enable CORS with exposed headers
+    CORS(app, 
+         supports_credentials=True,
+         expose_headers=['Content-Disposition'])
     
     # Initialize rate limiter
     limiter.init_app(app)

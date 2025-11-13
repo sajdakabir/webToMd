@@ -13,3 +13,6 @@ class Config:
     # Redis for caching (optional)
     REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
     CACHE_TTL = 3600  # 1 hour
+    
+    # ZenRows API key (optional - for better scraping)
+    ZENROWS_API_KEY = os.getenv('ZENROWS_API_KEY', '')

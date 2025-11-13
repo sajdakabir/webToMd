@@ -2,6 +2,7 @@ import requests
 import xml.etree.ElementTree as ET
 from urllib.parse import urljoin, urlparse
 import re
+import gzip
 
 class SitemapParser:
     """Parse robots.txt and sitemap.xml to discover URLs"""
@@ -11,8 +12,11 @@ class SitemapParser:
         self.domain = urlparse(base_url).netloc
         self.session = requests.Session()
         self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (compatible; WebScraperBot/1.0)'
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         })
+        adapter = requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=20, max_retries=3)
+        self.session.mount('http://', adapter)
+        self.session.mount('https://', adapter)
     
     def get_urls_from_sitemap(self, max_urls: int = 100) -> list:
         """
@@ -75,21 +79,40 @@ class SitemapParser:
             if response.status_code != 200:
                 return urls
             
-            root = ET.fromstring(response.content)
+            content = response.content
+            
+            # Handle gzipped sitemaps
+            if sitemap_url.endswith('.gz'):
+                try:
+                    content = gzip.decompress(content)
+                except:
+                    pass
+            
+            root = ET.fromstring(content)
+            
+            # Define namespaces
+            namespaces = {
+                'sm': 'http://www.sitemaps.org/schemas/sitemap/0.9',
+                '': 'http://www.sitemaps.org/schemas/sitemap/0.9'
+            }
             
             # Handle sitemap index (nested sitemaps)
-            for sitemap in root.findall('.//{*}sitemap'):
+            sitemap_elements = root.findall('.//{*}sitemap')
+            for sitemap in sitemap_elements:
+                if len(urls) >= max_urls:
+                    break
                 loc = sitemap.find('{*}loc')
-                if loc is not None and len(urls) < max_urls:
-                    nested_urls = self._parse_sitemap(loc.text, max_urls - len(urls))
+                if loc is not None and loc.text:
+                    nested_urls = self._parse_sitemap(loc.text.strip(), max_urls - len(urls))
                     urls.update(nested_urls)
             
             # Handle regular sitemap (URL entries)
-            for url_elem in root.findall('.//{*}url'):
+            url_elements = root.findall('.//{*}url')
+            for url_elem in url_elements:
                 if len(urls) >= max_urls:
                     break
                 loc = url_elem.find('{*}loc')
-                if loc is not None:
+                if loc is not None and loc.text:
                     url = loc.text.strip()
                     if self._is_valid_url(url):
                         urls.add(url)
