@@ -16,3 +16,6 @@ class Config:
     
     # ZenRows API key (optional - for better scraping)
     ZENROWS_API_KEY = os.getenv('ZENROWS_API_KEY', '')
+    
+    # OpenAI API key (optional - for LLM content cleaning)
+    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
