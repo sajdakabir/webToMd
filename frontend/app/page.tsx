@@ -125,7 +125,7 @@ export default function Home() {
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder="Enter website URL..."
-                  className="flex-1 px-4 py-3 bg-transparent border-none focus:outline-none text-gray-900 placeholder-gray-400"
+                  className="flex-1 px-4 py-3 bg-transparent border-none focus:outline-none text-gray-900 placeholder-gray-400 focus:ring-0"
                   required
                   disabled={loading}
                 />
@@ -157,7 +157,7 @@ export default function Home() {
                     type="checkbox"
                     checked={crawlSubpages}
                     onChange={(e) => setCrawlSubpages(e.target.checked)}
-                    className="w-4 h-4 text-gray-700 border-gray-300 rounded focus:ring-gray-500"
+                    className="w-4 h-4 text-gray-700 border-gray-300 rounded focus:ring-gray-500 accent-gray-700"
                   />
                   <span className="text-sm text-gray-600">
                     Crawl multiple pages from sitemap
@@ -175,7 +175,7 @@ export default function Home() {
                     max="100"
                     value={maxPages}
                     onChange={(e) => setMaxPages(parseInt(e.target.value) || 10)}
-                    className="w-20 px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-gray-500"
+                    className="w-20 px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
                   />
                 </div>
               )}
@@ -187,7 +187,7 @@ export default function Home() {
                     type="checkbox"
                     checked={useLLM}
                     onChange={(e) => setUseLLM(e.target.checked)}
-                    className="w-4 h-4 text-gray-700 border-gray-300 rounded focus:ring-gray-500"
+                    className="w-4 h-4 text-gray-700 border-gray-300 rounded focus:ring-gray-500 accent-gray-700"
                   />
                   <span className="text-sm text-gray-600">
                     Use AI to clean content (requires OpenAI API key)

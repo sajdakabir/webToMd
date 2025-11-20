@@ -19,7 +19,17 @@ class ContentExtractor:
         Returns:
             dict with title, markdown, and metadata
         """
-        soup = BeautifulSoup(html, 'lxml')
+        # Try parsers in order of preference
+        soup = None
+        for parser in ['lxml', 'html.parser', 'html5lib']:
+            try:
+                soup = BeautifulSoup(html, parser)
+                break
+            except Exception:
+                continue
+        
+        if soup is None:
+            soup = BeautifulSoup(html, 'html.parser')  # Last resort
         
         # Extract title
         title_tag = soup.find('title')
@@ -38,15 +48,8 @@ class ContentExtractor:
         if not body:
             body = soup
         
-        # Extract text content with structure
-        markdown = self._html_to_markdown(body)
-        
-        print(f"Final markdown length: {len(markdown)} characters")
-        # Convert to markdown
-        markdown = self.html2text.handle(clean_html)
-        
-        print(f"Markdown after html2text: {len(markdown)} characters")
-        print(f"First 500 chars of markdown: {markdown[:500]}")
+        # Extract text content with proper spacing
+        markdown = body.get_text(separator='\n\n', strip=True)
         
         # Clean up markdown
         markdown = self._clean_markdown(markdown)

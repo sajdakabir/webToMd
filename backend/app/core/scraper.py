@@ -16,7 +16,7 @@ class WebScraper:
     def __init__(self, max_workers: int = 4):
         self.max_workers = max_workers
         self.extractor = ContentExtractor()
-        self.llm_cleaner = LLMCleaner()
+        self.llm_cleaner = LLMCleaner(api_key=Config.OPENAI_API_KEY)
         self.zenrows_api_key = Config.ZENROWS_API_KEY
         self.use_zenrows = bool(self.zenrows_api_key)
     
@@ -61,13 +61,36 @@ class WebScraper:
             try:
                 print(f"🔄 Falling back to simple HTTP request...")
                 headers = {
-                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1'
                 }
-                response = requests.get(url, headers=headers, timeout=30)
+                response = requests.get(url, headers=headers, timeout=30, allow_redirects=True)
                 response.raise_for_status()
                 
+                # Ensure response content is properly decoded (handles gzip/deflate automatically)
+                response.encoding = response.apparent_encoding or 'utf-8'
+                html_content = response.text
+                
                 from bs4 import BeautifulSoup
-                soup = BeautifulSoup(response.text, 'lxml')
+                # Try parsers in order: lxml -> html.parser -> html5lib
+                soup = None
+                parser_used = None
+                for parser in ['lxml', 'html.parser', 'html5lib']:
+                    try:
+                        soup = BeautifulSoup(html_content, parser)
+                        parser_used = parser
+                        print(f"✓ Using parser: {parser}")
+                        break
+                    except Exception as e:
+                        print(f"⚠ Parser {parser} failed: {str(e)}")
+                        continue
+                
+                if soup is None:
+                    raise Exception("All HTML parsers failed")
                 
                 # Extract title
                 title_tag = soup.find('title')
@@ -80,6 +103,12 @@ class WebScraper:
                 # Get text
                 body = soup.find('body') or soup
                 text = body.get_text(separator='\n\n', strip=True)
+                
+                # Validate text content is readable
+                if text:
+                    non_printable = sum(1 for char in text[:500] if ord(char) < 32 and char not in '\n\r\t')
+                    if non_printable > 50:
+                        raise Exception("Received garbled content - encoding issue detected")
                 
                 # Extract links
                 base_domain = urlparse(url).netloc
