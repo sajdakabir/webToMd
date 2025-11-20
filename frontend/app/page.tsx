@@ -9,9 +9,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [markdown, setMarkdown] = useState<string>('');
-  const [useLLM, setUseLLM] = useState(false);
-  const [maxPages, setMaxPages] = useState(10);
-  const [crawlSubpages, setCrawlSubpages] = useState(true);
 
   const handleScrape = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,10 +25,10 @@ export default function Home() {
         body: JSON.stringify({ 
           url,
           options: {
-            llmFilter: useLLM,
-            crawlSubpages: crawlSubpages,
+            llmFilter: true,
+            crawlSubpages: true,
             followSitemap: true,
-            maxPages: maxPages
+            maxPages: 10
           }
         }),
       });
@@ -147,59 +144,7 @@ export default function Home() {
               </div>
 
             </form>
-            
-            {/* Options */}
-            <div className="mt-4 space-y-3">
-              {/* Crawl Subpages */}
-              <div className="flex items-center justify-between">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={crawlSubpages}
-                    onChange={(e) => setCrawlSubpages(e.target.checked)}
-                    className="w-4 h-4 text-gray-700 border-gray-300 rounded focus:ring-gray-500 accent-gray-700"
-                  />
-                  <span className="text-sm text-gray-600">
-                    Crawl multiple pages from sitemap
-                  </span>
-                </label>
-              </div>
-
-              {/* Max Pages */}
-              {crawlSubpages && (
-                <div className="flex items-center justify-between">
-                  <label className="text-sm text-gray-600">Max pages:</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={maxPages}
-                    onChange={(e) => setMaxPages(parseInt(e.target.value) || 10)}
-                    className="w-20 px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
-                  />
-                </div>
-              )}
-
-              {/* LLM Filter */}
-              <div className="flex items-center justify-between">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={useLLM}
-                    onChange={(e) => setUseLLM(e.target.checked)}
-                    className="w-4 h-4 text-gray-700 border-gray-300 rounded focus:ring-gray-500 accent-gray-700"
-                  />
-                  <span className="text-sm text-gray-600">
-                    Use AI to clean content (requires OpenAI API key)
-                  </span>
-                </label>
-              </div>
-            </div>
           </div>
-
-              <p className="text-sm text-gray-400 mt-4 text-center">
-                Press Enter or use the arrow to send
-              </p>
           {/* Error Display */}
           {error && (
             <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
