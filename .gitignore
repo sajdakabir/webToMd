@@ -14,7 +14,6 @@ ENV/
 
 # Scraped data
 scraped_data/
-*.txt
 *.md
 *.json
 
