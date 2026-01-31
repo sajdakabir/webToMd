@@ -17,9 +17,10 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setMarkdown('');
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
 
     try {
-      const response = await fetch('http://localhost:5000/api/scrape', {
+      const response = await fetch(`${backendUrl}/api/scrape`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
