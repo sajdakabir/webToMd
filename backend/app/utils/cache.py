@@ -8,9 +8,9 @@ try:
     redis_client = redis.from_url(Config.REDIS_URL, decode_responses=True)
     # Test connection
     redis_client.ping()
-    print("✅ Redis cache enabled")
+    print("Redis cache enabled")
 except Exception as e:
-    print(f"⚠️  Redis disabled (will work without caching): {e}")
+    print(f"Redis disabled (will work without caching): {e}")
     redis_client = None
 
 def cache_get(key: str):
