@@ -39,7 +39,7 @@ Frontend runs on http://localhost:3000
 
 Backend (.env):
 ```
-RATE_LIMIT=10 per minute
+RATE_LIMIT=
 OUTPUT_DIR=./scraped_data
 ZENROWS_API_KEY=your_key_here
 OPENAI_API_KEY=your_key_here
@@ -64,13 +64,6 @@ webToMd/
 ├── backend/           # Flask API
 └── docker-compose.yml
 ```
-
-## API Endpoints
-
-- `GET /api` - Health check
-- `POST /api/scrape` - Scrape URL
-- `POST /api/scrape/preview` - Quick preview
-- `POST /api/export` - Export results
 
 ## Contributing
 
