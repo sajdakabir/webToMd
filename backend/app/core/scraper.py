@@ -44,11 +44,11 @@ class WebScraper:
         result = None
         if self.zenrows_api_key:
             try:
-                print(f"🔍 Scraping {url} with ZenRows...")
+                print(f"Scraping {url} with ZenRows...")
                 result = zenrows_scrape(url, self.zenrows_api_key)
                 
                 if result['success']:
-                    print(f"✓ ZenRows: Extracted {len(result['text'])} characters")
+                    print(f"ZenRows: Extracted {len(result['text'])} characters")
                 else:
                     print(f"⚠ ZenRows failed: {result.get('error', 'Unknown error')}")
                     result = None
@@ -125,10 +125,10 @@ class WebScraper:
                     'links': list(set(links)),
                     'success': True
                 }
-                print(f"✓ Fallback: Extracted {len(text)} characters")
+                print(f"Fallback: Extracted {len(text)} characters")
                 
             except Exception as e:
-                print(f"✗ Fallback failed: {str(e)}")
+                print(f"Fallback failed: {str(e)}")
                 return {
                     'url': url,
                     'status': 'error',
