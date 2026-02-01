@@ -16,7 +16,14 @@ def create_app():
     
     # Enable CORS with exposed headers
     CORS(app, 
+         origins=[
+             'https://webtomd.sajdakabir.com',
+             'http://localhost:3000',
+             'http://localhost:8000'
+         ],
          supports_credentials=True,
+         methods=['GET', 'POST', 'OPTIONS'],
+         allow_headers=['Content-Type', 'Authorization'],
          expose_headers=['Content-Disposition'])
     
     # Initialize rate limiter
