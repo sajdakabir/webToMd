@@ -14,17 +14,16 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     
-    # Enable CORS with exposed headers
+    # Enable CORS with exposed headers - allow all origins for testing
     CORS(app, 
-         origins=[
-             'https://webtomd.sajdakabir.com',
-             'http://localhost:3000',
-             'http://localhost:8000'
-         ],
-         supports_credentials=True,
-         methods=['GET', 'POST', 'OPTIONS'],
-         allow_headers=['Content-Type', 'Authorization'],
-         expose_headers=['Content-Disposition'])
+         resources={r"/api/*": {
+             "origins": "*",
+             "methods": ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+             "allow_headers": ["Content-Type", "Authorization"],
+             "expose_headers": ["Content-Disposition"],
+             "max_age": 3600
+         }},
+         supports_credentials=False)
     
     # Initialize rate limiter
     limiter.init_app(app)
