@@ -17,8 +17,11 @@ scraped_data/
 *.md
 
 # JSON files (but allow config files)
-!vercel.json
 *.json
+!vercel.json
+!package.json
+!next.config.js
+!tsconfig.json
 
 # IDE
 .vscode/
