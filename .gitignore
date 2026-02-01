@@ -15,6 +15,9 @@ ENV/
 # Scraped data
 scraped_data/
 *.md
+
+# JSON files (but allow config files)
+!vercel.json
 *.json
 
 # IDE
