@@ -9,6 +9,11 @@ from datetime import datetime
 api_bp = Blueprint('api', __name__)
 scraper = WebScraper()
 
+@api_bp.route('/', methods=['GET'])
+def root():
+    """Root API endpoint"""
+    return jsonify({'message': 'Hi from webtomd', 'status': 'connected'})
+
 @api_bp.route('/health', methods=['GET'])
 def health():
     """Health check endpoint"""
