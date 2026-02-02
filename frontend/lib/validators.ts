@@ -4,11 +4,11 @@
 
 // SQL injection patterns to detect
 const SQL_INJECTION_PATTERNS = [
-  /(\\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE|UNION|DECLARE)\\b)/i,
-  /(--|;|\\/\\*|\\*\\/|xp_|sp_)/,
-  /(\\bOR\\b.*=.*|\\bAND\\b.*=.*)/i,
-  /('|(\\-\\-)|(;)|(\\|\\|)|(\\*))/,
-  /(\\bSCRIPT\\b|<script|javascript:)/i,
+  /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE|UNION|DECLARE)\b)/i,
+  /(--|;|\/\*|\*\/|xp_|sp_)/,
+  /(\bOR\b.*=.*|\bAND\b.*=.*)/i,
+  /('|(\-\-)|(;)|(\|\|)|(\*))/,
+  /(\bSCRIPT\b|<script|javascript:)/i,
 ];
 
 export interface ValidationResult {
@@ -100,11 +100,6 @@ export function validateUrl(url: string): ValidationResult {
     // Block private IP ranges (10.x.x.x, 172.16-31.x.x, 192.168.x.x)
     if (/^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)/.test(urlObj.hostname)) {
       return { valid: false, error: 'Cannot scrape private IP addresses' };
-    }
-
-    // Block file:// protocol explicitly
-    if (urlObj.protocol === 'file:') {
-      return { valid: false, error: 'File URLs are not allowed' };
     }
 
     return { valid: true, error: '', sanitizedUrl: testUrl };
