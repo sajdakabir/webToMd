@@ -41,10 +41,12 @@ def scrape():
     if not data or 'url' not in data:
         return jsonify({'error': 'URL is required'}), 400
     
-    url = normalize_url(data['url'])
+    # Validate and sanitize URL with comprehensive checks
+    from app.utils.validators import validate_and_sanitize_url
+    is_valid, url, error_msg = validate_and_sanitize_url(data['url'])
     
-    if not is_valid_url(url):
-        return jsonify({'error': 'Invalid URL format'}), 400
+    if not is_valid:
+        return jsonify({'error': error_msg}), 400
     
     options = data.get('options', {})
     
@@ -82,10 +84,12 @@ def preview():
     if not data or 'url' not in data:
         return jsonify({'error': 'URL is required'}), 400
     
-    url = normalize_url(data['url'])
+    # Validate and sanitize URL with comprehensive checks
+    from app.utils.validators import validate_and_sanitize_url
+    is_valid, url, error_msg = validate_and_sanitize_url(data['url'])
     
-    if not is_valid_url(url):
-        return jsonify({'error': 'Invalid URL format'}), 400
+    if not is_valid:
+        return jsonify({'error': error_msg}), 400
     
     try:
         result = scraper.scrape_url(url, {'enableDetailedResponse': False})
