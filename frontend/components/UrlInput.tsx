@@ -1,11 +1,79 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 
 interface UrlInputProps {
   onScrape: (url: string, options: any) => void;
   loading: boolean;
+}
+
+// SQL injection patterns to detect
+const SQL_INJECTION_PATTERNS = [
+  /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE|UNION|DECLARE)\b)/i,
+  /(--|;|\/\*|\*\/|xp_|sp_)/,
+  /(\bOR\b.*=.*|\bAND\b.*=.*)/i,
+  /('|(\-\-)|(;)|(\|\|)|(\*))/,
+  /(\bSCRIPT\b|<script|javascript:)/i,
+];
+
+function validateUrl(url: string): { valid: boolean; error: string } {
+  // Check if URL is empty
+  if (!url || url.trim().length === 0) {
+    return { valid: false, error: 'URL is required' };
+  }
+
+  // Check length constraints
+  if (url.length > 2048) {
+    return { valid: false, error: 'URL is too long (max 2048 characters)' };
+  }
+
+  if (url.length < 10) {
+    return { valid: false, error: 'URL is too short' };
+  }
+
+  // Check for SQL injection patterns
+  for (const pattern of SQL_INJECTION_PATTERNS) {
+    if (pattern.test(url)) {
+      return { valid: false, error: 'Invalid URL: contains prohibited characters' };
+    }
+  }
+
+  // Add protocol if missing
+  let testUrl = url;
+  if (!testUrl.startsWith('http://') && !testUrl.startsWith('https://')) {
+    testUrl = 'https://' + testUrl;
+  }
+
+  // Validate URL format
+  try {
+    const urlObj = new URL(testUrl);
+    
+    // Check protocol
+    if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
+      return { valid: false, error: 'URL must use HTTP or HTTPS protocol' };
+    }
+
+    // Check for valid hostname
+    if (!urlObj.hostname || urlObj.hostname.length < 3) {
+      return { valid: false, error: 'Invalid domain name' };
+    }
+
+    // Block localhost and private IPs
+    const blockedHosts = ['localhost', '127.0.0.1', '0.0.0.0', '::1'];
+    if (blockedHosts.includes(urlObj.hostname.toLowerCase())) {
+      return { valid: false, error: 'Cannot scrape localhost URLs' };
+    }
+
+    // Block private IP ranges
+    if (/^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)/.test(urlObj.hostname)) {
+      return { valid: false, error: 'Cannot scrape private IP addresses' };
+    }
+
+    return { valid: true, error: '' };
+  } catch (e) {
+    return { valid: false, error: 'Invalid URL format' };
+  }
 }
 
 export default function UrlInput({ onScrape, loading }: UrlInputProps) {
@@ -14,10 +82,29 @@ export default function UrlInput({ onScrape, loading }: UrlInputProps) {
   const [crawlSubpages, setCrawlSubpages] = useState(false);
   const [followSitemap, setFollowSitemap] = useState(true);
   const [detailedResponse, setDetailedResponse] = useState(false);
+  const [urlError, setUrlError] = useState('');
+
+  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newUrl = e.target.value;
+    setUrl(newUrl);
+    
+    // Clear error when user starts typing
+    if (urlError) {
+      setUrlError('');
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url) return;
+    
+    // Validate URL before submitting
+    const validation = validateUrl(url);
+    if (!validation.valid) {
+      setUrlError(validation.error);
+      return;
+    }
+
+    setUrlError('');
 
     const options = {
       maxPages,
@@ -38,15 +125,25 @@ export default function UrlInput({ onScrape, loading }: UrlInputProps) {
             Website URL
           </label>
           <input
-            type="url"
+            type="text"
             id="url"
             value={url}
-            onChange={(e) => setUrl(e.target.value)}
+            onChange={handleUrlChange}
             placeholder="https://example.com"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:border-transparent ${
+              urlError
+                ? 'border-red-500 focus:ring-red-500'
+                : 'border-gray-300 focus:ring-gray-500'
+            }`}
             required
             disabled={loading}
           />
+          {urlError && (
+            <div className="mt-2 flex items-center text-sm text-red-600">
+              <AlertCircle className="w-4 h-4 mr-1" />
+              <span>{urlError}</span>
+            </div>
+          )}
         </div>
 
         {/* Options */}
